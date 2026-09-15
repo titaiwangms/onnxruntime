@@ -3240,7 +3240,11 @@ static void RunGQACudaCacheAliasingTest(
   node.AddAttribute("kv_num_heads", static_cast<int64_t>(kv_num_heads));
   if (sliding_window_cache) {
     node.AddAttribute("sliding_window_cache", int64_t{1});
-    node.AddAttribute("local_window_size", int64_t{cache_capacity - 1});
+    // Keep the single-token bound regression focused on absolute length versus
+    // cache capacity; W=C makes each decode step evict exactly one row.
+    const int local_window_size =
+        valid_windowed_cache && sequence_length == 1 ? cache_capacity : cache_capacity - 1;
+    node.AddAttribute("local_window_size", static_cast<int64_t>(local_window_size));
   }
   ASSERT_STATUS_OK(graph.Resolve());
   std::string model_data;
